@@ -1,1 +1,36 @@
-
+name: Build Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract Android project
+        run: unzip -q Bitcoin_Recovery_Assistant_v5_1_reviewed.zip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Run unit tests
+        working-directory: Bitcoin_Recovery_Assistant_v5
+        run: gradle --no-daemon testDebugUnitTest
+      - name: Build debug APK
+        working-directory: Bitcoin_Recovery_Assistant_v5
+        run: gradle --no-daemon assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bitcoin-recovery-assistant-v5.1-apk
+          path: Bitcoin_Recovery_Assistant_v5/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
